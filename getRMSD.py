@@ -207,12 +207,14 @@ def getRMSD(proteinName):
 
     x = pymol.cmd.align(proteinPDB, proteinNEW, cycles = 0, transform = 0)
 
-    print('RMSD: ' + str(x[0]))
+    return float(x[0])
 
 
-def readCIFFile(proteinName, chainLetter, headerPDBFile, tailPDBFile, middlePDBFile):
+def readCIFFile(proteinName, chainLetter, middlePDBFile):
     fileCIFpath = 'proteinsCIF/' + proteinName + '.cif'
     
+    headerPDBFile = ''
+    tailPDBFile = ''
     coordinates = []
 
     buildingHeader = True
@@ -282,28 +284,47 @@ def buildPDBFile(coordinates, header, tail, middle, proteinName):
     file.close()
 
 def main():
-    if len(sys.argv) <= 1:
-        print("Protein name was not specified.")
-        return
-    
-    proteinName = sys.argv[1]
-    chainLetter = 'A'
-    if(len(sys.argv) > 2):
-        chainLetter = sys.argv[2]
 
-    headerPDBFile = ''
-    tailPDBFile = ''
-    middlePDBFile = []
+    proteinsFilePath = 'proteinsNames.txt'
+    proteins = []
 
-    [ coordinatesPDB, headerPDBFile, tailPDBFile ] = readCIFFile(proteinName, chainLetter, headerPDBFile, tailPDBFile, middlePDBFile)
+    with open(proteinsFilePath) as f:
+        line = f.readline()
 
-    angles3DAB = readAngles3DAB(proteinName)
-    
-    lengthsBetweenCAPDB = lengthsFromCoordinates(coordinatesPDB)
-    newCoordinates = calculateNewCoordinates(angles3DAB, lengthsBetweenCAPDB)
+        while line:
+            lineSplit = [x for x in re.split(r'\s{1,}', line) if x] 
 
-    buildPDBFile(newCoordinates, headerPDBFile, tailPDBFile, middlePDBFile, proteinName)
-    getRMSD(proteinName)
+            name = lineSplit[0]
+            chain = ''
+
+            if len(lineSplit) > 1:
+                chain = lineSplit[1]
+            else:
+                chain = 'A'
+            
+            proteins.append([name, chain])
+
+            line = f.readline()
+
+    for protein in proteins:
+        proteinName = protein[0]
+        chainLetter = protein[1]
+
+        middlePDBFile = []
+
+        [ coordinatesPDB, headerPDBFile, tailPDBFile ] = readCIFFile(proteinName, chainLetter, middlePDBFile)
+
+        angles3DAB = readAngles3DAB(proteinName)
+        
+        lengthsBetweenCAPDB = lengthsFromCoordinates(coordinatesPDB)
+        newCoordinates = calculateNewCoordinates(angles3DAB, lengthsBetweenCAPDB)
+
+        buildPDBFile(newCoordinates, headerPDBFile, tailPDBFile, middlePDBFile, proteinName)
+        rmsd = getRMSD(proteinName)
+
+        print('Protein Name: ' + proteinName)
+        print("RMSD: " + '{:.3f}'.format(rmsd))
+        print()
     
     # useless stuff \/
 
@@ -327,3 +348,4 @@ def main():
 if __name__ == "__main__":
     pymol.finish_launching()
     main()
+    pymol.cmd.quit()
