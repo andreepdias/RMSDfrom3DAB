@@ -1,9 +1,13 @@
 #!/usr/bin/python3
-# align 1edp0, 1edp1, cycles = 0, transform = 0
+# align 1edp, 1edp_new, cycles = 0, transform = 0
+
+import __main__
+__main__.pymol_argv = [ 'pymol', '-Qc'] # Quiet and no GUI
 
 import sys
 import re
 import math
+import pymol
 
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
@@ -179,6 +183,104 @@ def plot3D(coordinates):
 
     plt.show()
 
+def printList(list, msg):
+    print(msg)
+    for i in range(len(list)):
+        print(i, list[i])
+    print()
+
+def print3DMatrix(matrix, msg):
+    print(msg)
+    for i in range(len(matrix)):
+        print('{0:0.3f} {1:0.3f} {2:0.3f}'.format(matrix[i][0], matrix[i][1], matrix[i][2]))
+    print()
+
+def getRMSD(proteinName):
+    proteinPDB = proteinName
+    proteinNEW = proteinName + '_new'
+
+    proteinPDBPath = 'proteinsCIF/' + proteinPDB + '.cif'
+    proteinNEWPath = 'proteinsNEW/' + proteinNEW + '.cif'
+
+    pymol.cmd.load(proteinPDBPath)
+    pymol.cmd.load(proteinNEWPath)
+
+    x = pymol.cmd.align(proteinPDB, proteinNEW, cycles = 0, transform = 0)
+
+    print('RMSD: ' + str(x[0]))
+
+
+def readCIFFile(proteinName, chainLetter, headerPDBFile, tailPDBFile, middlePDBFile):
+    fileCIFpath = 'proteinsCIF/' + proteinName + '.cif'
+    
+    coordinates = []
+
+    buildingHeader = True
+
+    with open(fileCIFpath) as f:
+
+        line = f.readline()
+        headerPDBFile += line
+
+        while line:
+
+            lineSplit = [x for x in re.split(r'\s{1,}', line) if x]
+            header = lineSplit[0]
+        
+            if header == 'ATOM':
+                buildingHeader = False
+
+                atom = lineSplit[3]
+                chain = lineSplit[6]
+
+                if atom == 'CA' and chain == chainLetter:
+                    coordinates.append([float(lineSplit[10]), float(lineSplit[11]), float(lineSplit[12])])
+
+                    middlePDBFile.append(lineSplit)
+            else:
+                if buildingHeader:
+                    headerPDBFile += line
+                else:
+                    tailPDBFile += line
+
+
+            line = f.readline()
+
+    return [ coordinates, headerPDBFile, tailPDBFile ]
+
+
+def buildPDBFile(coordinates, header, tail, middle, proteinName):
+
+    ident = [' ', '\t', ' ', '\t', ' ', ' ', ' ', ' ', '\t', ' ', ' ', ' ', '\t', ' ', ' ', ' ', '\t', ' ', ' ', '\t']
+
+    fileText = ''
+    fileText += header
+
+    for k in range(len(middle)):
+        line = str(middle[k][0])
+
+        for i in range(1, 10):
+            line += str(ident[i - 1])
+            line += str(middle[k][i])
+
+        for i in range(10, 13):
+            line += str(ident[i - 1])
+            line += '{:.2f}'.format(float(coordinates[k][i - 10]))
+
+        for i in range(13, len(middle[k])):
+            line += str(ident[i - 1])
+            line += str(middle[k][i])
+
+        line += '\n'
+        fileText += line
+    
+    fileText += tail
+
+    filePath = 'proteinsNEW/'  + proteinName + '_new.cif'
+    file = open(filePath,'w')
+    file.write(fileText)
+    file.close()
+
 def main():
     if len(sys.argv) <= 1:
         print("Protein name was not specified.")
@@ -186,48 +288,42 @@ def main():
     
     proteinName = sys.argv[1]
     chainLetter = 'A'
-
     if(len(sys.argv) > 2):
         chainLetter = sys.argv[2]
 
-    coordinatesPDB = readPDBFile(proteinName, chainLetter)
-    
+    headerPDBFile = ''
+    tailPDBFile = ''
+    middlePDBFile = []
+
+    [ coordinatesPDB, headerPDBFile, tailPDBFile ] = readCIFFile(proteinName, chainLetter, headerPDBFile, tailPDBFile, middlePDBFile)
+
     angles3DAB = readAngles3DAB(proteinName)
-    chain3DAB = readChain3DAB(proteinName)
-    coordinates3DAB = coordinatesFromAngles(angles3DAB)
-    obj3DAB = calculate3DAB(angles3DAB, chain3DAB)
     
-    lengthsBetweenCA3DAB = lengthsFromCoordinates(coordinates3DAB)
     lengthsBetweenCAPDB = lengthsFromCoordinates(coordinatesPDB)
-
     newCoordinates = calculateNewCoordinates(angles3DAB, lengthsBetweenCAPDB)
-    newLengths = lengthsFromCoordinates(newCoordinates)
 
-    print('Free Energy from 3DAB: ' + str(obj3DAB) + '\n')
+    buildPDBFile(newCoordinates, headerPDBFile, tailPDBFile, middlePDBFile, proteinName)
+    getRMSD(proteinName)
+    
+    # useless stuff \/
 
-    print('Lengths between Ca from 3DAB coordinates')
-    for i in range(len(lengthsBetweenCA3DAB)):
-        print(i, lengthsBetweenCA3DAB[i])
-    print()
+    # chain3DAB = readChain3DAB(proteinName)
+    # coordinates3DAB = coordinatesFromAngles(angles3DAB)
+    # obj3DAB = calculate3DAB(angles3DAB, chain3DAB)
 
-    print('Lengths between Ca from PDB file coordinates')
-    for i in range(len(lengthsBetweenCAPDB)):
-        print(i, lengthsBetweenCAPDB[i])
-    print()
+    # lengthsBetweenCA3DAB = lengthsFromCoordinates(coordinates3DAB)
+    # newLengths = lengthsFromCoordinates(newCoordinates)
 
-    print('Lengths between Ca from 3DAB coordinates and PDB lengths')
-    for i in range(len(newLengths)):
-        print(i, newLengths[i])
-    print()
+    # print('Free Energy from 3DAB: ' + str(obj3DAB) + '\n')
+    # printList(lengthsBetweenCA3DAB, 'Lengths between Ca from 3DAB coordinates')
+    # printList(lengthsBetweenCAPDB, 'Lengths between Ca from 3DAB coordinates')
+    # printList(newLengths, 'Lengths between Ca from 3DAB coordinates and PDB lengths')
+    # print3DMatrix(newCoordinates, 'New Coordinates from 3DAB coordinates and PDB lengths')
 
-    print("New Coordinates from 3DAB coordinates and PDB lengths")
-    for i in range(len(newCoordinates)):
-        print(newCoordinates[i][0], newCoordinates[i][1], newCoordinates[i][2])
-    print()
-
-    plot3D(coordinatesPDB)
-    plot3D(newCoordinates)
+    # plot3D(coordinatesPDB)
+    # plot3D(newCoordinates)
 
 
 if __name__ == "__main__":
+    pymol.finish_launching()
     main()
