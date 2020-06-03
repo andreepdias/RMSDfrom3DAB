@@ -47,12 +47,12 @@ def readAngles3DAB(proteinName):
     return angles
 
 def getRMSD(proteinName):
-    proteinPDB = proteinName
-    # proteinPDB = proteinName + '_old'
+    # proteinPDB = proteinName
+    proteinPDB = proteinName + '_old'
     proteinNEW = proteinName + '_new'
 
-    proteinPDBPath = 'proteinsCIF/' + proteinPDB + '.cif'
-    # proteinPDBPath = 'proteinsOLD/' + proteinPDB + '.cif'
+    # proteinPDBPath = 'proteinsCIF/' + proteinPDB + '.cif'
+    proteinPDBPath = 'proteinsOLD/' + proteinPDB + '.cif'
     proteinNEWPath = 'proteinsNEW/' + proteinNEW + '.cif'
 
     pymol.cmd.load(proteinPDBPath)
