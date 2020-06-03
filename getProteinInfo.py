@@ -2,21 +2,23 @@
 
 import re
 
-def readProteinsNames():
-    proteinsNames = []
+def readProteins():
+    proteins = []
     filePath = 'proteinsNames.txt'
 
     with open(filePath) as f:
         line = f.readline()
 
         while line:
-            proteinsNames.append(line.rstrip('\n'))
+            lineSplit = [x for x in re.split(r'\s{1,}', line) if x]
+            proteins.append(lineSplit)
+
             line = f.readline()
             
-    return proteinsNames
+    return proteins
 
-def getProteinInfo(proteinName):
-    filePath = 'proteinsCIF/' + proteinName + '.cif'
+def getProteinInfo(protein):
+    filePath = 'proteinsCIF/' + protein[0] + '.cif'
 
     proteinInfo = {}
 
@@ -28,14 +30,14 @@ def getProteinInfo(proteinName):
 
             header = lineSplit[0]
             
-            if header == 'ATOM':
+            if header == 'ATOM' or header == 'HETATM':
                 model = lineSplit[20]
 
                 if int(model) == 1:
                     atom = lineSplit[3]
                     chain = lineSplit[6]
 
-                    if atom == 'CA':
+                    if (header == 'ATOM' and atom == 'CA') or (header == 'HETATM' and atom == 'C') or (header == 'HETATM' and atom == 'N'):
                         if not chain in proteinInfo:
                             proteinInfo[chain] = 0
                         proteinInfo[chain] += 1
@@ -45,23 +47,26 @@ def getProteinInfo(proteinName):
     return [ [k, v] for k, v in proteinInfo.items() ]
 
 def main():
-    proteinsNames = readProteinsNames()
+    proteins = readProteins()
     proteinsInfos = []
 
-
-    for p in proteinsNames:
+    for p in proteins:
         proteinInfo = getProteinInfo(p)
-
         proteinsInfos.append([p, proteinInfo])
 
     for protein in proteinsInfos:
-        name = protein[0]
+        name = protein[0][0]
         print(name + ':')
 
         for c in protein[1]:
             chain = c[0]
             count = c[1]
-            print(chain, count)
+            print(chain, count, end='')
+
+            if int(protein[0][1]) == int(count):
+                print(' ok')
+            else:
+                print(' not ok')
         print()
 
 if __name__ == '__main__':

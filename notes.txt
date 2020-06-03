@@ -12,3 +12,45 @@
 1gk4 not ok (79/79/70/78/70/74 out of 84)
 1tz5 not ok (36/37)
 2h3s not ok (24/25)
+
+
+1cb3:
+A 13 ok
+
+1tz4:
+A 37 ok
+
+1tz5:
+A 37 ok
+
+2h3s:
+B 25 ok
+
+1agt:
+A 38 ok
+
+1edp:
+A 17 ok
+
+1bxl:
+B 16 ok
+
+1crn:
+A 46 ok
+
+1pch:
+A 88 ok
+
+1cb3 13
+1hvv 75
+1tz4 37
+2ewh 98
+2kgu 34
+1gk4 84
+1tz5 37
+2h3s 25 B
+1agt 38
+1edp 17
+1bxl 16 B
+1crn 46
+1pch 88

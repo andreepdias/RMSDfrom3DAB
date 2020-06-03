@@ -48,9 +48,11 @@ def readAngles3DAB(proteinName):
 
 def getRMSD(proteinName):
     proteinPDB = proteinName
+    # proteinPDB = proteinName + '_old'
     proteinNEW = proteinName + '_new'
 
     proteinPDBPath = 'proteinsCIF/' + proteinPDB + '.cif'
+    # proteinPDBPath = 'proteinsOLD/' + proteinPDB + '.cif'
     proteinNEWPath = 'proteinsNEW/' + proteinNEW + '.cif'
 
     pymol.cmd.load(proteinPDBPath)
@@ -91,16 +93,19 @@ def readCIFFile(proteinName, chainLetter, middlePDBFile):
             lineSplit = [x for x in re.split(r'\s{1,}', line) if x]
             header = lineSplit[0]
         
-            if header == 'ATOM':
+            if header == 'ATOM' or header == 'HETATM':
                 buildingHeader = False
 
-                atom = lineSplit[3]
-                chain = lineSplit[6]
+                model = lineSplit[20]
 
-                if atom == 'CA' and chain == chainLetter:
-                    coordinates.append([float(lineSplit[10]), float(lineSplit[11]), float(lineSplit[12])])
+                if int(model) == 1:
+                    atom = lineSplit[3]
+                    chain = lineSplit[6]
 
-                    middlePDBFile.append(lineSplit)
+                    if (header == 'ATOM' and atom == 'CA' and chain == chainLetter) or (header == 'HETATM' and atom == 'C' and chain == chainLetter) or (header == 'HETATM' and atom == 'N' and chain == chainLetter):
+                        coordinates.append([float(lineSplit[10]), float(lineSplit[11]), float(lineSplit[12])])
+
+                        middlePDBFile.append(lineSplit)
             else:
                 if buildingHeader:
                     headerPDBFile += line
@@ -112,7 +117,7 @@ def readCIFFile(proteinName, chainLetter, middlePDBFile):
 
     return [ coordinates, headerPDBFile, tailPDBFile ]
 
-def buildPDBFile(coordinates, header, tail, middle, proteinName):
+def buildNewPDBFile(coordinates, header, tail, middle, proteinName):
 
     ident = [' ', '\t', ' ', '\t', ' ', ' ', ' ', ' ', '\t', ' ', ' ', ' ', '\t', ' ', ' ', ' ', '\t', ' ', ' ', '\t']
 
@@ -144,6 +149,38 @@ def buildPDBFile(coordinates, header, tail, middle, proteinName):
     file.write(fileText)
     file.close()
 
+def buildOldPDBFile(header, tail, middle, proteinName):
+
+    ident = [' ', '\t', ' ', '\t', ' ', ' ', ' ', ' ', '\t', ' ', ' ', ' ', '\t', ' ', ' ', ' ', '\t', ' ', ' ', '\t']
+
+    fileText = ''
+    fileText += header
+
+    for k in range(len(middle)):
+        line = str(middle[k][0])
+
+        for i in range(1, 10):
+            line += str(ident[i - 1])
+            line += str(middle[k][i])
+
+        for i in range(10, 13):
+            line += str(ident[i - 1])
+            line += '{:.2f}'.format(float(middle[k][i]))
+
+        for i in range(13, len(middle[k])):
+            line += str(ident[i - 1])
+            line += str(middle[k][i])
+
+        line += '\n'
+        fileText += line
+    
+    fileText += tail
+
+    filePath = 'proteinsOLD/'  + proteinName + '_old.cif'
+    file = open(filePath,'w')
+    file.write(fileText)
+    file.close()
+
 def readInputFile(proteinsFilePath):
     proteins = []
 
@@ -156,8 +193,8 @@ def readInputFile(proteinsFilePath):
             name = lineSplit[0]
             chain = ''
 
-            if len(lineSplit) > 1:
-                chain = lineSplit[1]
+            if len(lineSplit) >= 3:
+                chain = lineSplit[2]
             else:
                 chain = 'A'
             
@@ -185,12 +222,13 @@ def main():
         lengthsBetweenCAPDB = lengthsFromCoordinates(coordinatesPDB)
         newCoordinates = calculateNewCoordinates(angles3DAB, lengthsBetweenCAPDB)
 
-        buildPDBFile(newCoordinates, headerPDBFile, tailPDBFile, middlePDBFile, proteinName)
+        buildNewPDBFile(newCoordinates, headerPDBFile, tailPDBFile, middlePDBFile, proteinName)
+        buildOldPDBFile(headerPDBFile, tailPDBFile, middlePDBFile, proteinName)
         
         rmsd = getRMSD(proteinName)
 
         print('Protein Name: ' + proteinName)
-        print("RMSD: " + '{:.3f}'.format(rmsd))
+        print("RMSD: " + '{:.5f}'.format(rmsd))
         print()
     
 
