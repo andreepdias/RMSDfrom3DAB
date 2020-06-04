@@ -1,0 +1,20 @@
+\begin{table}[h]\centering
+    \begin{tabular}{ccccc}
+        \toprule
+            \textbf{Proteína}   & \textbf{L}    & \textbf{Energia Livre MCA}    & \textbf{Energia Livre TCC}    & \textbf{RMSD} \\
+        \midrule
+			\textbf{1CB3}	& \textbf{13}	& -8.400	& -8.459	& 5.669	\\ 
+			\textbf{1BXL}	& \textbf{16}	& -16.526	& -17.147	& 6.013	\\ 
+			\textbf{1EDP}	& \textbf{17}	& -14.565	& -14.991	& 4.629	\\ 
+			\textbf{2H3S}	& \textbf{25}	& -17.024	& -20.896	& 8.960	\\ 
+			\textbf{1TZ4}	& \textbf{37}	& -26.748	& -41.102	& 11.444	\\ 
+			\textbf{1TZ5}	& \textbf{37}	& -34.723	& -48.447	& 10.526	\\ 
+			\textbf{1AGT}	& \textbf{38}	& -55.253	& -64.535	& 9.211	\\ 
+			\textbf{1CRN}	& \textbf{46}	& -82.548	& -90.460	& 8.246	\\ 
+			\textbf{1HVV}	& \textbf{75}	& -54.835	& -97.979	& 26.211	\\ 
+			\textbf{1GK4}	& \textbf{84}	& -57.972	& -105.842	& 31.874	\\ 
+			\textbf{1PCH}	& \textbf{88}	& -114.030	& -159.660	& 11.532	\\ 
+			\textbf{2EWH}	& \textbf{98}	& -190.045	& -240.567	& 11.727	\\ 
+        \bottomrule
+    \end{tabular}
+\end{table}

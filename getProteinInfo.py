@@ -2,6 +2,18 @@
 
 import re
 
+def sequenceTo3DAB(sequence):
+    new = ''
+
+    for c in sequence:
+        if c == 'I' or c == 'V' or c == 'L' or c == 'P' or c == 'C' or c == 'M' or c == 'A' or c == 'G':
+            new += 'A'
+        elif c == 'D' or c == 'E' or c == 'F' or c == 'H' or c == 'K' or c == 'N' or c == 'Q' or c == 'R' or c == 'S' or c == 'T' or c == 'W' or c == 'Y':
+            new += 'B'
+        else:
+            new += c
+    return new
+
 def readProteins():
     proteins = []
     filePath = 'proteinsNames.txt'
@@ -14,8 +26,21 @@ def readProteins():
             proteins.append(lineSplit)
 
             line = f.readline()
-            
     return proteins
+
+def readChains():
+    chains = {}
+    filePath = 'proteinsChains.txt'
+
+    with open(filePath) as f:
+        line = f.readline()
+
+        while line:
+            lineSplit = [x for x in re.split(r'\s{1,}', line) if x]
+            chains[lineSplit[0]] = [lineSplit[1], lineSplit[2]]
+
+            line = f.readline()
+    return chains
 
 def getProteinInfo(protein):
     filePath = 'proteinsCIF/' + protein[0] + '.cif'
@@ -47,7 +72,10 @@ def getProteinInfo(protein):
     return [ [k, v] for k, v in proteinInfo.items() ]
 
 def main():
+
     proteins = readProteins()
+    chains = readChains()
+
     proteinsInfos = []
 
     for p in proteins:
@@ -59,14 +87,24 @@ def main():
         print(name + ':')
 
         for c in protein[1]:
-            chain = c[0]
+            chainLetter = c[0]
             count = c[1]
-            print(chain, count, end='')
+            count3DAB = int(protein[0][1])
+
+            print(chainLetter, count, count3DAB, end='')
 
             if int(protein[0][1]) == int(count):
                 print(' ok')
             else:
                 print(' not ok')
+        
+        chainPDB = chains[name][1]
+        chainAB = chains[name][0]
+
+        print(chainAB)
+        print(sequenceTo3DAB(chainPDB))
+        print(chainPDB)
+
         print()
 
 if __name__ == '__main__':

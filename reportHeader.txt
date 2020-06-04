@@ -1,0 +1,5 @@
+\begin{table}[h]\centering
+    \begin{tabular}{ccccc}
+        \toprule
+            \textbf{Proteína}   & \textbf{L}    & \textbf{Energia Livre MCA}    & \textbf{Energia Livre TCC}    & \textbf{RMSD} \\
+        \midrule

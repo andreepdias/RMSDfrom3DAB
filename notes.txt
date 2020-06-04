@@ -1,17 +1,26 @@
-1agt ok
-1edp ok
-1bxl ok [B]
-1crn ok
-1pch ok
+1hvv:
+A 67 75 not ok
+B 62 75 not ok
+C 66 75 not ok
+D 61 75 not ok
 
-1cb3 not ok (11/13)
-1hvv not ok (79/79/70/78/70/74 out of 75)
-1tz4 not ok (36/37)
-2ewh not ok (92/98)
-2kgu not ok (35/34)
-1gk4 not ok (79/79/70/78/70/74 out of 84)
-1tz5 not ok (36/37)
-2h3s not ok (24/25)
+2ewh:
+A 92 98 not ok
+B 2 98 not ok
+
+2kgu:
+A 35 34 not ok
+
+1gk4:
+A 79 84 not ok
+B 79 84 not ok
+C 70 84 not ok
+D 78 84 not ok
+E 70 84 not ok
+F 74 84 not ok
+G 1 84 not ok
+
+
 
 
 1cb3:
@@ -41,16 +50,29 @@ A 46 ok
 1pch:
 A 88 ok
 
+
 1cb3 13
-1hvv 75
-1tz4 37
-2ewh 98
-2kgu 34
-1gk4 84
-1tz5 37
-2h3s 25 B
-1agt 38
-1edp 17
 1bxl 16 B
+1edp 17
+2h3s 25 B
+1tz4 37
+1tz5 37
+1agt 38
 1crn 46
 1pch 88
+
+/* DO NOT DELETE BELOW */
+
+1cb3 13
+1bxl 16 B
+1edp 17
+2h3s 25 B
+2kgu 34
+1tz4 37
+1tz5 37
+1agt 38
+1crn 46
+1hvv 75
+1gk4 84
+1pch 88
+2ewh 98

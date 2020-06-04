@@ -29,6 +29,9 @@ def calculateNewCoordinates(angles3DAB, lengthsBetweenCAPDB):
 
     for i in range(3, proteinLength):
 
+        if i - 1 >= len(lengthsBetweenCAPDB):
+            break
+
         coordinates[i][0] = coordinates[i - 1][0] + math.cos(angles3DAB[i - 2]) * math.cos(angles3DAB[i + proteinLength - 5]) * lengthsBetweenCAPDB[i - 1]
         coordinates[i][1] = coordinates[i - 1][1] + math.sin(angles3DAB[i - 2]) * math.cos(angles3DAB[i + proteinLength - 5]) * lengthsBetweenCAPDB[i - 1]
         coordinates[i][2] = coordinates[i - 1][2] + math.sin(angles3DAB[i + proteinLength - 5]) * lengthsBetweenCAPDB[i - 1]
@@ -41,18 +44,19 @@ def readAngles3DAB(proteinName):
     angles = []
 
     with open(filePath) as f:
-        line = f.readline().split(' ')
+        line = f.readline()
+        line = [x for x in re.split(r'\s{1,}', line) if x]
         angles = [(float(x) * math.pi / 180.0) for x in line] 
     
     return angles
 
 def getRMSD(proteinName):
     # proteinPDB = proteinName
-    proteinPDB = proteinName + '_old'
+    proteinPDB = proteinName
     proteinNEW = proteinName + '_new'
 
     # proteinPDBPath = 'proteinsCIF/' + proteinPDB + '.cif'
-    proteinPDBPath = 'proteinsOLD/' + proteinPDB + '.cif'
+    proteinPDBPath = 'proteinsCIF/' + proteinPDB + '.cif'
     proteinNEWPath = 'proteinsNEW/' + proteinNEW + '.cif'
 
     pymol.cmd.load(proteinPDBPath)
@@ -149,88 +153,184 @@ def buildNewPDBFile(coordinates, header, tail, middle, proteinName):
     file.write(fileText)
     file.close()
 
-def buildOldPDBFile(header, tail, middle, proteinName):
-
-    ident = [' ', '\t', ' ', '\t', ' ', ' ', ' ', ' ', '\t', ' ', ' ', ' ', '\t', ' ', ' ', ' ', '\t', ' ', ' ', '\t']
-
-    fileText = ''
-    fileText += header
-
-    for k in range(len(middle)):
-        line = str(middle[k][0])
-
-        for i in range(1, 10):
-            line += str(ident[i - 1])
-            line += str(middle[k][i])
-
-        for i in range(10, 13):
-            line += str(ident[i - 1])
-            line += '{:.2f}'.format(float(middle[k][i]))
-
-        for i in range(13, len(middle[k])):
-            line += str(ident[i - 1])
-            line += str(middle[k][i])
-
-        line += '\n'
-        fileText += line
-    
-    fileText += tail
-
-    filePath = 'proteinsOLD/'  + proteinName + '_old.cif'
-    file = open(filePath,'w')
-    file.write(fileText)
-    file.close()
-
-def readInputFile(proteinsFilePath):
+def readInputNames(proteinsNamePath):
     proteins = []
 
-    with open(proteinsFilePath) as f:
+    with open(proteinsNamePath) as f:
         line = f.readline()
 
         while line:
             lineSplit = [x for x in re.split(r'\s{1,}', line) if x] 
 
             name = lineSplit[0]
-            chain = ''
+            length = lineSplit[1]
+            chainLetter = ''
 
             if len(lineSplit) >= 3:
-                chain = lineSplit[2]
+                chainLetter = lineSplit[2]
             else:
-                chain = 'A'
+                chainLetter = 'A'
             
-            proteins.append([name, chain])
+            proteins.append([name, chainLetter, length])
 
             line = f.readline()
     
     return proteins
 
+def readInputChains(proteinsChainPath):
+    chains = {}
+
+    with open(proteinsChainPath) as f:
+        line = f.readline()
+
+        while line:
+            lineSplit = [x for x in re.split(r'\s{1,}', line) if x] 
+
+            name = lineSplit[0]
+            chain = lineSplit[1]
+            chains[name] = chain
+
+            line = f.readline()
+    
+    return chains
+
+def readInputObjMCA(proteinsObjMCAPath):
+    objs = {}
+
+    with open(proteinsObjMCAPath) as f:
+        line = f.readline()
+
+        while line:
+            lineSplit = [x for x in re.split(r'\s{1,}', line) if x] 
+
+            name = lineSplit[0]
+            obj = lineSplit[1]
+            objs[name] = float(obj)
+
+            line = f.readline()
+    return objs
+
+def calculate3DAB(angles, chain):
+    proteinLength = int((len(angles) + 5) / 2)
+
+    aminoacidPosition = [None] * proteinLength * 3
+
+    aminoacidPosition[0] = 0.0
+    aminoacidPosition[0 + proteinLength] = 0.0
+    aminoacidPosition[0 + proteinLength * 2] = 0.0
+
+    aminoacidPosition[1] = 0.0
+    aminoacidPosition[1 + proteinLength] = 1.0
+    aminoacidPosition[1 + proteinLength * 2] = 0.0
+
+    aminoacidPosition[2] = math.cos(angles[0])
+    aminoacidPosition[2 + proteinLength] = math.sin(angles[0]) + 1.0
+    aminoacidPosition[2 + proteinLength * 2] = 0.0
+
+    for i in range(3, proteinLength):
+        aminoacidPosition[i] = aminoacidPosition[i - 1] + math.cos(angles[i - 2]) * math.cos(angles[i + proteinLength - 5])
+        aminoacidPosition[i + proteinLength] = aminoacidPosition[i - 1 + proteinLength] + math.sin(angles[i - 2]) * math.cos(angles[i + proteinLength - 5])
+        aminoacidPosition[i + proteinLength * 2] = aminoacidPosition[i - 1 + proteinLength * 2] + math.sin(angles[i + proteinLength - 5])
+    
+    obj = 0.0
+    for i in range(proteinLength - 2):
+        obj += (1.0 - math.cos(angles[i])) / 4.0
+
+    for i in range(proteinLength - 2):
+        for j in range(i + 2, proteinLength):
+            c = -0.5
+            if chain[i] == 'A' and chain[j] == 'A':
+                c = 1.0
+            elif chain[i] == 'B' and chain[j] == 'B':
+                c = 0.5
+            
+            dx = aminoacidPosition[i] - aminoacidPosition[j]
+            dy = aminoacidPosition[i + proteinLength] - aminoacidPosition[j + proteinLength]
+            dz = aminoacidPosition[i + proteinLength * 2] - aminoacidPosition[j + proteinLength * 2]
+            d = math.sqrt( (dx * dx) + (dy * dy) + (dz * dz) )
+
+            obj += 4.0 * (1.0 / math.pow(d, 12.0) - c / math.pow(d, 6.0))
+    
+    return obj
+
+def buildLatexReport(proteins):
+    report = ''
+
+    header = ''
+    tail = ''
+
+    reportPath = 'reportLatex.txt'
+    reportHeaderPath = 'reportHeader.txt'
+    reportTailPath = 'reportTail.txt'
+
+    with open(reportHeaderPath, 'r') as f:
+        header = f.read()
+    with open(reportTailPath, 'r') as f:
+        tail = f.read()
+
+    report += header
+
+    for p in proteins:
+        report += '\t\t\t\\textbf{' + p[0] + '}\t'
+        report += '& \\textbf{' + p[1] + '}\t'
+        report += '& ' + p[2] + '\t'
+        report += '& ' + p[3] + '\t'
+        report += '& ' + p[4] + '\t'
+        report += '\\\\ \n'
+    
+    report += tail
+
+    reportFile = open(reportPath,'w')
+    reportFile.write(report)
+    reportFile.close()
+
+
+
 def main():
 
-    proteinsFilePath = 'proteinsNames.txt'
-    proteins = readInputFile(proteinsFilePath)
+    proteinsNamePath = 'proteinsNames.txt'
+    proteinsChainPath = 'proteinsChains.txt'
+    proteinsObjMCAPath = 'proteinsObjMCA.txt'
+
+    proteins = readInputNames(proteinsNamePath)
+    chains = readInputChains(proteinsChainPath)
+    objsMCA = readInputObjMCA(proteinsObjMCAPath)
+
+    proteinsOutput = []
 
     for protein in proteins:
         proteinName = protein[0]
         chainLetter = protein[1]
+        length = protein[2]
 
         middlePDBFile = []
-
         [ coordinatesPDB, headerPDBFile, tailPDBFile ] = readCIFFile(proteinName, chainLetter, middlePDBFile)
 
         angles3DAB = readAngles3DAB(proteinName)
-        
+        obj3DAB = calculate3DAB(angles3DAB, chains[proteinName])
+
         lengthsBetweenCAPDB = lengthsFromCoordinates(coordinatesPDB)
         newCoordinates = calculateNewCoordinates(angles3DAB, lengthsBetweenCAPDB)
 
         buildNewPDBFile(newCoordinates, headerPDBFile, tailPDBFile, middlePDBFile, proteinName)
-        buildOldPDBFile(headerPDBFile, tailPDBFile, middlePDBFile, proteinName)
         
         rmsd = getRMSD(proteinName)
 
-        print('Protein Name: ' + proteinName)
-        print("RMSD: " + '{:.5f}'.format(rmsd))
+        objMCA = '{:.3f}'.format(objsMCA[proteinName])
+        obj3DAB = '{:.3f}'.format(obj3DAB)
+        rmsd = '{:.3f}'.format(rmsd) 
+
+        print('Name:       ' + proteinName)
+        print('Length:     ' + length)
+        print('Energy MCA: ' + objMCA)
+        print('Energy TCC: ' + obj3DAB)
+        print('RMSD:       ' + rmsd)
         print()
+
+        proteinsOutput.append([proteinName.upper(), length, objMCA, obj3DAB, rmsd])
     
+    buildLatexReport(proteinsOutput)
+
 
 if __name__ == "__main__":
     pymol.finish_launching()
@@ -393,6 +493,38 @@ def print3DMatrix(matrix, msg):
     for i in range(len(matrix)):
         print('{0:0.3f} {1:0.3f} {2:0.3f}'.format(matrix[i][0], matrix[i][1], matrix[i][2]))
     print()
+
+def buildOldPDBFile(header, tail, middle, proteinName):
+
+    ident = [' ', '\t', ' ', '\t', ' ', ' ', ' ', ' ', '\t', ' ', ' ', ' ', '\t', ' ', ' ', ' ', '\t', ' ', ' ', '\t']
+
+    fileText = ''
+    fileText += header
+
+    for k in range(len(middle)):
+        line = str(middle[k][0])
+
+        for i in range(1, 10):
+            line += str(ident[i - 1])
+            line += str(middle[k][i])
+
+        for i in range(10, 13):
+            line += str(ident[i - 1])
+            line += '{:.2f}'.format(float(middle[k][i]))
+
+        for i in range(13, len(middle[k])):
+            line += str(ident[i - 1])
+            line += str(middle[k][i])
+
+        line += '\n'
+        fileText += line
+    
+    fileText += tail
+
+    filePath = 'proteinsOLD/'  + proteinName + '_old.cif'
+    file = open(filePath,'w')
+    file.write(fileText)
+    file.close()
 
 
 '''
